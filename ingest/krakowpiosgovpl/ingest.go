@@ -25,6 +25,7 @@ type KrakowPiosGovPl struct {
 type Channel struct {
 	Type string
 	ID   int
+	Unit string
 }
 
 // Station describes a station and which measurements it supports
@@ -151,14 +152,22 @@ func getConfiguration() ([]Station, error) {
 		return nil, ErrorAPICallFailed
 	}
 
-	stationsMap := make(map[int]Station)
+	stationsMap := make(map[int]*Station)
 	for _, s := range resp.Config.Stations {
-		stationsMap[s.ID] = Station{s.Name, s.ID, nil}
+		stationsMap[s.ID] = &Station{s.Name, s.ID, []Channel{}}
 	}
+	for _, v := range resp.Config.Channels {
+		if station, ok := stationsMap[v.StationID]; ok {
+			if v.ParamID == "pm10" || v.ParamID == "pm2.5" {
+				station.Channels = append(station.Channels, Channel{v.ParamID, v.ChannelID, v.UnitID})
+			}
+		}
+	}
+
 	stations := make([]Station, 0, len(stationsMap))
 	for _, v := range stationsMap {
 		if v.isOfInterest() {
-			stations = append(stations, v)
+			stations = append(stations, *v)
 		}
 	}
 
