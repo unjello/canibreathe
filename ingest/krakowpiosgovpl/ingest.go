@@ -4,7 +4,7 @@ package krakowpiosgovpl
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -12,8 +12,25 @@ import (
 	"time"
 )
 
+var (
+	ErrorAPICallFailed = errors.New("monitoring.krakow.pios.gov.pl API call failed")
+)
+
 // KrakowPiosGovPl is main API interface
 type KrakowPiosGovPl struct{}
+
+// Channel describes a measurement channel as defined in PIOS
+type Channel struct {
+	Type string
+	ID   int
+}
+
+// Station describes a station and which measurements it supports
+type Station struct {
+	Name     string
+	ID       int
+	Channels []Channel
+}
 
 const (
 	krakowPiosConfigurationURL = "http://monitoring.krakow.pios.gov.pl/dane-pomiarowe/wczytaj-konfiguracje"
@@ -73,30 +90,77 @@ type krakowPiosConfigurationResponse struct {
 	}
 }
 
-func getConfiguration() error {
+const (
+	stationIDKrakowAlejaKrasinskiego = 6
+	stationIDKrakowNowaHuta          = 7
+	stationIDKrakowKurdwanow         = 16
+	stationIDKrakowDietla            = 149
+	stationIDKrakowOsPiastow         = 152
+	stationIDKrakowZlotyRog          = 153
+	stationIDKrakowOsWadow           = 161
+	stationIDKrakowTelimeny          = 163
+)
+
+var (
+	stationsOfInterest = []int{
+		stationIDKrakowAlejaKrasinskiego,
+		stationIDKrakowNowaHuta,
+		stationIDKrakowKurdwanow,
+		stationIDKrakowDietla,
+		stationIDKrakowOsPiastow,
+		stationIDKrakowZlotyRog,
+		stationIDKrakowOsWadow,
+		stationIDKrakowTelimeny,
+	}
+)
+
+func (s *Station) isOfInterest() bool {
+	for _, v := range stationsOfInterest {
+		if v == s.ID {
+			return true
+		}
+	}
+	return false
+}
+
+func getConfiguration() ([]Station, error) {
 	request, err := newRequest(krakowPiosConfigurationURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer response.Body.Close()
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp := krakowPiosConfigurationResponse{}
 	err = json.Unmarshal([]byte(contents), &resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Println(resp)
-	return nil
+	if resp.Success == false {
+		return nil, ErrorAPICallFailed
+	}
+
+	stationsMap := make(map[int]Station)
+	for _, s := range resp.Config.Stations {
+		stationsMap[s.ID] = Station{s.Name, s.ID, nil}
+	}
+	stations := make([]Station, 0, len(stationsMap))
+	for _, v := range stationsMap {
+		if v.isOfInterest() {
+			stations = append(stations, v)
+		}
+	}
+
+	return stations, nil
 }
 
 const timeout = time.Duration(2 * time.Second)
