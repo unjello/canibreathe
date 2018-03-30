@@ -61,7 +61,7 @@ func newRequest(url string) (*http.Request, error) {
 	}
 
 	request.Header.Set("User-Agent", userAgent)
-	request.Header.Set("Host", "Host: monitoring.krakow.pios.gov.pl")
+	request.Header.Set("Host", "monitoring.krakow.pios.gov.pl")
 	request.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 	request.Header.Set("Connection", "keep-alive")
