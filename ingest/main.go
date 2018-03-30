@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
+
 	"./krakowpiosgovpl"
 )
 
 func main() {
-	api := krakowpiosgovpl.New()
-	api = api
+	api, err := krakowpiosgovpl.New()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(api.Stations)
 }

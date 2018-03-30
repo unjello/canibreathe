@@ -17,7 +17,9 @@ var (
 )
 
 // KrakowPiosGovPl is main API interface
-type KrakowPiosGovPl struct{}
+type KrakowPiosGovPl struct {
+	Stations []Station
+}
 
 // Channel describes a measurement channel as defined in PIOS
 type Channel struct {
@@ -172,8 +174,12 @@ func dialTimeout(network, addr string) (net.Conn, error) {
 // New returns new instance of monitoring.krakow.pios.gov.pl
 // preloads configuration from website and does initial mapping
 // and filtering of data stations.
-func New() *KrakowPiosGovPl {
+func New() (*KrakowPiosGovPl, error) {
 	api := KrakowPiosGovPl{}
-	getConfiguration()
-	return &api
+	stations, err := getConfiguration()
+	if err != nil {
+		return nil, err
+	}
+	api.Stations = stations
+	return &api, nil
 }
