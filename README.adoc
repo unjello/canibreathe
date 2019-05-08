@@ -1,0 +1,5 @@
+image::http://unmaintained.tech/badge.svg[link=http://unmaintained.tech/]
+
+= DEPRECATED
+
+_canibreathe_ is no longer supported, please consider using https://github.com/jsynowiec/airqmon[Airqmon].
